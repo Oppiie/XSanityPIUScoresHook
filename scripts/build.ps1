@@ -60,13 +60,13 @@ BEGIN
   BEGIN
     BLOCK "040904b0"
     BEGIN
-      VALUE "CompanyName", "mat100payette\0"
+      VALUE "CompanyName", "Oppiie\0"
       VALUE "FileDescription", "$description\0"
       VALUE "FileVersion", "$version\0"
       VALUE "ProductName", "XSanityPIUScoresHook\0"
       VALUE "ProductVersion", "$version\0"
       VALUE "OriginalFilename", "$name.exe\0"
-      VALUE "LegalCopyright", "Copyright (c) 2026 mat100payette\0"
+      VALUE "LegalCopyright", "Copyright (c) 2026 Oppiie\0"
     END
   END
   BLOCK "VarFileInfo"

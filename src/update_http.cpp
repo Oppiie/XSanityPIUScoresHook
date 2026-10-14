@@ -47,9 +47,9 @@ Address address(const std::string& url) {
 
     Address result{{parts.lpszHostName, parts.dwHostNameLength}, {parts.lpszUrlPath, parts.dwUrlPathLength}};
     bool api = result.host == L"api.github.com" &&
-               result.route == L"/repos/mat100payette/XSanityPIUScoresHook/releases/latest";
+               result.route == L"/repos/Oppiie/XSanityPIUScoresHook/releases/latest";
     bool release = result.host == L"github.com" &&
-                   result.route.starts_with(L"/mat100payette/XSanityPIUScoresHook/releases/download/");
+                   result.route.starts_with(L"/Oppiie/XSanityPIUScoresHook/releases/download/");
     bool asset = result.host == L"release-assets.githubusercontent.com" ||
                  result.host == L"objects.githubusercontent.com";
     if (!api && !release && !asset) {

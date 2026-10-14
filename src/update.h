@@ -4,7 +4,7 @@
 
 namespace piu {
 inline constexpr char LatestReleaseUrl[] =
-    "https://api.github.com/repos/mat100payette/XSanityPIUScoresHook/releases/latest";
+    "https://api.github.com/repos/Oppiie/XSanityPIUScoresHook/releases/latest";
 inline constexpr size_t MaxInstallerSize = 64 * 1024 * 1024;
 
 struct UpdateAsset {

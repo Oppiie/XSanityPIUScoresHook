@@ -31,7 +31,7 @@ std::array<unsigned, 3> version_parts(std::string_view version) {
 UpdateAsset find_asset(const Array& assets, const std::string& name, const std::string& tag, size_t limit) {
     std::optional<UpdateAsset> found;
     const auto expected =
-        "https://github.com/mat100payette/XSanityPIUScoresHook/releases/download/" + tag + "/" + name;
+        "https://github.com/Oppiie/XSanityPIUScoresHook/releases/download/" + tag + "/" + name;
     for (const auto& value : assets) {
         auto asset = value.GetObject();
         if (asset.GetNamedString(L"name") != wide(name)) {

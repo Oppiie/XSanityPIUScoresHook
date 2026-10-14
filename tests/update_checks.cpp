@@ -42,8 +42,7 @@ struct ReleaseFixture {
             put(asset, L"state", "uploaded");
             put(asset,
                 L"browser_download_url",
-                "https://github.com/mat100payette/XSanityPIUScoresHook/releases/download/v" + version + "/" +
-                    file);
+                "https://github.com/Oppiie/XSanityPIUScoresHook/releases/download/v" + version + "/" + file);
             put(asset, L"size", static_cast<int>(hash ? checksum.size() : bytes.size()));
             assets.Append(asset);
         }
@@ -148,7 +147,7 @@ void metadata_checks() {
         check(allowed_update_url(url), "official release and CDN addresses accepted");
     }
 
-    for (const auto* url : {"http://github.com/mat100payette/XSanityPIUScoresHook/releases/download/v1/a",
+    for (const auto* url : {"http://github.com/Oppiie/XSanityPIUScoresHook/releases/download/v1/a",
              "https://github.com/another/repo/releases/download/v1/a",
              "https://api.github.com/user",
              "https://github.com.evil.example/setup.exe",

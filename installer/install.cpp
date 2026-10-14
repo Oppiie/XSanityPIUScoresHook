@@ -136,7 +136,7 @@ Registration product_registration(const InstallPaths& paths) {
     for (const auto& [name, value] :
         std::vector<std::pair<std::wstring, std::wstring>>{{L"DisplayName", L"XSanity PIU Scores Companion"},
             {L"DisplayVersion", PIU_VERSION_W},
-            {L"Publisher", L"mat100payette"},
+            {L"Publisher", L"Oppiie"},
             {L"InstallLocation", paths.app.wstring()},
             {L"DisplayIcon", (paths.app / L"PiuCompanion.exe").wstring()},
             {L"UninstallString", setup + L" --uninstall"},
