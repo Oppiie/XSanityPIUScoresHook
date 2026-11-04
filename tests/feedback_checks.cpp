@@ -6,39 +6,55 @@ namespace {
 struct FeedbackApi : Api {
     int error = 0;
     bool offline = false;
+    std::function<void()> on_read;
     int posts = 0;
-    int rating = 401050;
-    bool stats_offline = false;
-
-    std::optional<int> pumbility(const std::string&, const std::string&) override {
-        if (stats_offline) {
-            throw Error("stats unavailable");
-        }
-        return rating;
-    }
+    Score pb{"chart", 981836, false, 33902};
 
     std::vector<Chart> catalog(const std::string&, const std::string&) override {
         return {{"chart", "Test Song!", "Single", 10}};
     }
 
     std::vector<Score> scores(const std::string&, const std::string&) override {
+        if (on_read) {
+            on_read();
+        }
         if (offline) {
             throw Error("offline");
         }
-        return {};
+        return {pb};
     }
 
-    void upload(const std::string&, const std::string&, const Play&) override {
+    void upload(const std::string&, const std::string&, const Play& play) override {
         ++posts;
         if (error) {
             throw HttpError(error);
         }
-        rating += 175;
+        pb = {play.chart_id, play.score, play.broken, 34408};
     }
 };
 } // namespace
 
 void feedback_checks() {
+    std::vector<Chart> charts;
+    std::map<std::string, Score> pool;
+    for (int i = 0; i < 50; ++i) {
+        auto id = std::to_string(i);
+        charts.push_back({id, "Chart", "Single", 19});
+        pool[id] = {id, 980000, false, 33210};
+    }
+    charts.push_back({"new", "New clear", "Double", 18});
+    charts.push_back({"coop", "Two players", "CoOp", 2});
+    pool["coop"] = {"coop", 999999, false, 99999};
+    Score improved{"new", 990000, false, 33200};
+    auto before = pool_total(charts, pool);
+    check(before == 50 * 33210 && pool_total(charts, pool, &improved) == before,
+        "a PB below the merged pool floor gains zero and co-op is excluded");
+    improved.pumbility_cents = 34408;
+    check(pool_total(charts, pool, &improved) == *before + 1198,
+        "a new entry gains only the amount above the displaced clear");
+    improved.broken = true;
+    check(pool_total(charts, pool, &improved) == before, "a failed PB cannot enter the pool");
+
     ResultFeedback notices;
     auto stamp = now();
     notices.observe(result("older"), "checking", stamp);
@@ -68,7 +84,7 @@ void feedback_checks() {
         engine.poll();
         return read(status_path);
     };
-    engine.capture(result("first"), now());
+    engine.capture(result("first", 992575), now());
     check(status().find("first\tchecking") != std::string::npos,
         "capture alone never announces a successful upload");
     api.error = 401;
@@ -77,14 +93,14 @@ void feedback_checks() {
         "invalid credentials retain the score and request account settings");
     api.error = 0;
     engine.sync();
-    check(status().find("first\taccepted\t401225\t175") != std::string::npos && engine.pending_count(0) == 0,
+    check(status().find("first\taccepted\t34408\t506") != std::string::npos && engine.pending_count(0) == 0,
         "only confirmed upload acceptance displays submitted");
     auto modified = fs::last_write_time(status_path);
     engine.poll();
     check(
         fs::last_write_time(status_path) == modified, "unchanged outcomes do not rewrite the feedback file");
 
-    engine.capture(result("lost-response"), now());
+    engine.capture(result("lost-response", 995000), now());
     api.error = 500;
     engine.sync();
     auto posts = api.posts;
@@ -123,10 +139,10 @@ void feedback_checks() {
     auto unknown_reason = result("unknown-reason");
     unknown_reason.skip_reason = "bad\nrecord";
     engine.capture(unknown_reason, now());
-    check(status().find("unknown-reason\tskipped\t401225\t0\n") != std::string::npos &&
+    check(status().find("unknown-reason\tskipped\t34408\t0\n") != std::string::npos &&
               engine.pending_count(0) == 0,
         "unknown reasons stay ineligible and cannot inject feedback records");
-    engine.capture(result("offline"), now());
+    engine.capture(result("offline", 995000), now());
     api.offline = true;
     rejects(
         [&] {
@@ -138,13 +154,32 @@ void feedback_checks() {
 
     fs::remove(status_path);
     fs::create_directory(status_path);
-    api.stats_offline = true;
-    engine.capture(result("write-failure"), now());
+    api.pb.pumbility_cents.reset();
+    engine.capture(result("write-failure", 998000), now());
     engine.poll();
     api.offline = false;
     api.error = 0;
     engine.sync();
     check(engine.pending_count(0) == 0, "feedback write failure cannot stop uploads");
+
+    fs::remove(status_path);
+    api.on_read = [&] {
+        if (api.pb.score == 1000000) {
+            check(status().find("refresh-error\taccepted\tfetching\n") != std::string::npos,
+                "accepted result advertises the actual outstanding website read");
+            throw Error("refresh failed");
+        }
+    };
+    engine.capture(result("refresh-error", 1000000), now());
+    rejects(
+        [&] {
+            engine.sync();
+        },
+        "post-upload read failed");
+    auto failed_refresh = status();
+    check(failed_refresh.find("refresh-error\taccepted") != std::string::npos &&
+              failed_refresh.find("fetching") == std::string::npos && engine.pending_count(0) == 0,
+        "failed refresh clears the loading state and preserves upload acceptance");
 
     auto overlay_root = fixture.game(L"overlay-only");
     config.game_root = overlay_root;

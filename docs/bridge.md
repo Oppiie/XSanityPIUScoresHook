@@ -73,7 +73,7 @@ The hook reads fixed status codes for the matching attempt; it never executes fi
 | Show unavailable status if no response arrives | After eight seconds |
 | Fade a final outcome beneath the usercard | After five seconds; repeated feedback does not restart the timer |
 
-A separate footer on each player's side shows the overall Pumbility for their linked account and mix. The status row can append the total and gain as two tab-separated fields in hundredths of a point. A dash in the gain field means the change is unknown. The hook keeps the readout on screen until evaluation ends. The companion compares the stats endpoint before and after an accepted upload. A covered or skipped play adds zero.
+A separate footer on each player's side shows the overall Pumbility for their linked account and mix. An accepted upload carries a third field of `fetching` while its score refresh is in flight. The PB notification can already show success during this read. The status row can append the total and gain as two tab-separated fields in hundredths of a point. A dash in the gain field means the change is unknown. The hook keeps the readout on screen until evaluation ends. The companion sums the 50 highest non-co-op clears from the website’s scored chart rows. Each row is priced by PIU Scores to two decimals for the selected mix. After a confirmed PB appears in the refreshed scores, replacing just that chart in the previous pool isolates the gain from other concurrent changes. A covered or skipped play adds zero.
 
 Feedback failures cannot block capture or uploads, and notifications do not change retry policy.
 

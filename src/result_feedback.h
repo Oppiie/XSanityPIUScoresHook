@@ -24,6 +24,6 @@ public:
     void rating(int account, std::optional<int> total);
     void gain(const std::string& id, std::optional<int> before, std::optional<int> after);
     void update(const std::string& id, const std::string& code);
-    std::string snapshot(uint64_t clock = now()) const;
+    std::string snapshot(uint64_t clock = now(), std::string_view refreshing_event = {}) const;
 };
 } // namespace piu

@@ -546,6 +546,18 @@ local function message(side)
     return feedback_game.cards[side]:GetChild("Message").values.settext[1]
 end
 check(message(1) == "Checking PIU Scores...", "notification waits for a real companion outcome")
+local rating = feedback_game.widgets:GetChild("PumbilityP1")
+local waiting = "P1  PUMBILITY\nFetching..."
+check(rating.values.settext[1] == waiting, "evaluation immediately shows a pending rating")
+feedback_game.feedback = "PIUCOMPANION 1\n" .. ids[1] .. "\tsending\t401050\t-\n"
+feedback_game:tick("ScreenEvaluation", 0.5)
+check(rating.values.settext[1] == waiting, "a cached total stays hidden while sending")
+feedback_game.feedback = "PIUCOMPANION 1\n" .. ids[1] .. "\taccepted\tfetching\n"
+feedback_game:tick("ScreenEvaluation", 0.5)
+check(
+    message(1) == "PB submitted" and rating.values.settext[1] == waiting,
+    "confirmed submission can still be fetching its gain"
+)
 feedback_game.feedback = "PIUCOMPANION 1\n" .. ids[1] .. "\taccepted\t401225\t175\n" .. ids[2] .. "\tauth\n"
 feedback_game:tick("ScreenEvaluation", 0.5)
 check(
@@ -561,13 +573,12 @@ check(
     feedback_game.cards[1].values.diffusealpha[1] == 0,
     "unchanged feedback fades out after five seconds and cannot restart the timer"
 )
-local rating = feedback_game.widgets:GetChild("PumbilityP1")
 check(
     rating.values.visible[1] and rating.values.settext[1] == "P1  PUMBILITY\n4012.25   +1.75",
     "rating belongs to this result and remains visible after its notification fades"
 )
 check(
-    feedback_game.widgets:GetChild("PumbilityP2").values.settext[1] == "P2  PUMBILITY\n—",
+    feedback_game.widgets:GetChild("PumbilityP2").values.settext[1] == "P2  PUMBILITY\nUnavailable",
     "P2 never inherits P1's rating"
 )
 feedback_game.feedback = "PIUCOMPANION 1\nold-event\tretry\n"

@@ -191,6 +191,39 @@ void save_store(const fs::path& folder, const Store& store) {
     atomic_write(folder / L"uploads.json", encode(data));
 }
 
+// PIU Scores prices each chart for the requested mix. The merged pool sums its best 50 clears.
+std::optional<int> pool_total(
+    const std::vector<Chart>& catalog, const std::map<std::string, Score>& best, const Score* replacement) {
+    std::vector<int> values;
+    for (const auto& chart : catalog) {
+        if (chart.type == "CoOp") {
+            continue;
+        }
+        auto found = best.find(chart.id);
+        const Score* score = found == best.end() ? nullptr : &found->second;
+        if (replacement && replacement->chart_id == chart.id) {
+            score = replacement;
+        }
+        if (!score || score->broken || !score->score) {
+            continue;
+        }
+        if (!score->pumbility_cents) {
+            return std::nullopt;
+        }
+        values.push_back(*score->pumbility_cents);
+    }
+    const auto count = (std::min)(values.size(), size_t{50});
+    std::partial_sort(values.begin(), values.begin() + count, values.end(), std::greater<>{});
+    int64_t sum = 0;
+    for (size_t i = 0; i < count; ++i) {
+        sum += values[i];
+    }
+    if (sum > INT_MAX) {
+        return std::nullopt;
+    }
+    return static_cast<int>(sum);
+}
+
 bool better(const Result& candidate, const Score* previous) {
     if (!previous) {
         return true;

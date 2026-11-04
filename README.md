@@ -40,7 +40,7 @@ Keep the results screen open for at least three seconds so its animation can set
 
 ## Results screen
 
-Each linked player has a Pumbility readout at the bottom of the results screen. It shows their overall total for the selected mix and the change PIU Scores reports after syncing this play. The readout stays visible until you leave results. A dash means the total is unavailable.
+Each linked player has a Pumbility readout at the bottom of the results screen. It shows the total of their top 50 eligible website chart values for the selected mix and how much this play added. The readout stays visible until you leave results. It shows **Fetching...** while the companion checks the play and reads the updated scores. If the figures cannot be confirmed, it shows **Unavailable**.
 
 With syncing enabled, each player's results screen shows a small PIU Scores status card: submitted, website PB already up to date, saved for retry, or a specific reason it could not sync. Cards appear beneath each usercard, follow the current play, and fade out after five seconds. A new outcome can briefly show again; leaving the results screen hides them immediately.
 

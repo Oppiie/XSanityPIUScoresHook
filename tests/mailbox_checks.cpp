@@ -138,16 +138,17 @@ void live_checks() {
                 R"({"data":[{"id":"s14","songName":"Digitalis","type":"Single","level":14},{"id":"s16","songName":"Digitalis","type":"Single","level":16}],"next":null})");
         }
 
-        if (url.find("/stats?") != std::string::npos) {
-            return token == "bob-key"
-                       ? parse(uploads.empty() ? R"({"pumbility":501.25})" : R"({"pumbility":513.5})")
-                       : parse(R"({"pumbility":767})");
-        }
         if (!body) {
             if (token == "alice-key" && alice_offline) {
                 throw Error("Account temporarily unavailable");
             }
 
+            if (token == "bob-key") {
+                return parse(
+                    uploads.empty()
+                        ? R"({"scoringModel":"phoenix","data":[{"chartId":"s16","score":960000,"pumbility":501.25}],"next":null})"
+                        : R"({"scoringModel":"phoenix","data":[{"chartId":"s16","score":980002,"pumbility":513.50}],"next":null})");
+            }
             return parse(R"({"scoringModel":"phoenix","data":[],"next":null})");
         }
 

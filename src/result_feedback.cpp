@@ -39,12 +39,14 @@ void ResultFeedback::gain(const std::string& id, std::optional<int> before, std:
     }
 }
 
-std::string ResultFeedback::snapshot(uint64_t clock) const {
+std::string ResultFeedback::snapshot(uint64_t clock, std::string_view refreshing_event) const {
     std::string text = "PIUCOMPANION 1\n";
     for (const auto& notice : notices_) {
         if (!notice.id.empty() && clock < notice.expires) {
             text += notice.id + "\t" + notice.code;
-            if (notice.total) {
+            if (notice.id == refreshing_event) {
+                text += "\tfetching";
+            } else if (notice.total) {
                 const bool skipped = notice.code == "covered" || notice.code == "failed_disabled" ||
                                      notice.code == "unmatched" || notice.code.starts_with("skipped");
                 text += "\t" + std::to_string(*notice.total) + "\t" +

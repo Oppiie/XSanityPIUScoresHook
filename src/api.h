@@ -17,11 +17,6 @@ public:
     virtual std::vector<Chart> catalog(const std::string& token, const std::string& mix) = 0;
     virtual std::vector<Score> scores(const std::string& token, const std::string& mix) = 0;
 
-    // Website's overall rating for the mix, in hundredths of a point.
-    virtual std::optional<int> pumbility(const std::string&, const std::string&) {
-        return std::nullopt;
-    }
-
     virtual void upload(const std::string& token, const std::string& mix, const Play& play) = 0;
 };
 
@@ -39,7 +34,6 @@ public:
     static bool allowed(const std::string& url);
     std::vector<Chart> catalog(const std::string& token, const std::string& mix) override;
     std::vector<Score> scores(const std::string& token, const std::string& mix) override;
-    std::optional<int> pumbility(const std::string& token, const std::string& mix) override;
     void upload(const std::string& token, const std::string& mix, const Play& play) override;
 };
 } // namespace piu

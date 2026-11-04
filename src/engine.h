@@ -18,6 +18,7 @@ class Engine {
     Store data_;
     ResultFeedback feedback_;
     std::string published_feedback_;
+    std::string refreshing_event_;
     fs::path feedback_path_;
     std::array<std::string, 2> account_feedback_;
     std::array<std::string, 2> tokens_;

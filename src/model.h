@@ -49,6 +49,7 @@ struct Score {
     std::string chart_id;
     std::optional<int> score;
     bool broken = false;
+    std::optional<int> pumbility_cents;
 };
 
 struct Result {
@@ -95,6 +96,9 @@ GameChart game_chart(const Object& object);
 Result result_from_json(const Object& object);
 Object result_json(const Result& result);
 Object play_json(const Play& play);
+std::optional<int> pool_total(const std::vector<Chart>& catalog,
+    const std::map<std::string, Score>& best,
+    const Score* replacement = nullptr);
 bool better(const Result& candidate, const Score* previous);
 std::string match(const GameChart& game, const std::vector<Chart>& catalog);
 } // namespace piu

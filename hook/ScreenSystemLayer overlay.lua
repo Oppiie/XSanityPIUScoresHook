@@ -394,17 +394,22 @@ local function read_feedback()
     local found = {}
     for line in text:gmatch("[^\n]+") do
         local id, code, total, gain = line:match("^([%w_-]+)\t([a-z_]+)\t(%d+)\t([%d%-]+)$")
+        local fetching = false
+        if not id then
+            id, code = line:match("^([%w_-]+)\t(accepted)\tfetching$")
+            fetching = id ~= nil
+        end
         if not id then
             id, code = line:match("^([%w_-]+)\t([a-z_]+)$")
         end
         if id and messages[code] then
-            found[id] = { code = code, total = tonumber(total), gain = tonumber(gain) }
+            found[id] = { code = code, total = tonumber(total), gain = tonumber(gain), fetching = fetching }
         end
     end
     for _, notice in pairs(notices) do
         if notice.id and found[notice.id] then
             local result = found[notice.id]
-            notice.total, notice.gain = result.total, result.gain
+            notice.total, notice.gain, notice.fetching = result.total, result.gain, result.fetching
             local code = result.code
             if code ~= notice.code and not (code == "checking" and notice.code == "unavailable") then
                 notice.code = code
@@ -413,6 +418,16 @@ local function read_feedback()
             notice.received = true
         end
     end
+end
+
+local function rating_value(notice)
+    if notice.code == "checking" or notice.code == "sending" or notice.fetching then
+        return "Fetching..."
+    end
+    if notice.total and notice.gain then
+        return string.format("%.2f   +%.2f", notice.total / 100, notice.gain / 100)
+    end
+    return "Unavailable"
 end
 
 local function update_widget(side, notice)
@@ -428,13 +443,7 @@ local function update_widget(side, notice)
         and notice.code ~= "unlinked"
         and notice.code ~= "expired"
     then
-        text = "P"
-            .. side
-            .. "  PUMBILITY\n"
-            .. (notice.total and string.format("%.2f", notice.total / 100) or "—")
-        if notice.gain then
-            text = text .. string.format("   +%.2f", notice.gain / 100)
-        end
+        text = "P" .. side .. "  PUMBILITY\n" .. rating_value(notice)
     end
     if widget.text ~= text then
         widget.actor:settext(text or ""):visible(text ~= nil)

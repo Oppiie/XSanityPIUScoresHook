@@ -33,15 +33,6 @@ SkippedPlay skipped_play(const Result& result) {
     return {"skipped_" + reason, "Not submitted: " + found->second + "."};
 }
 
-std::optional<int> read_pumbility(Api& api, const std::string& token, const std::string& mix) {
-    try {
-        return api.pumbility(token, mix);
-    } catch (...) {
-        // Stats are optional. A failed read must never prevent or retry a score upload.
-        return std::nullopt;
-    }
-}
-
 struct UploadFailure {
     std::string state;
     std::string message;
@@ -490,7 +481,7 @@ void Engine::publish_feedback() {
         }
 
         path = GameHook::exports(config_.game_root) / L"status.txt";
-        text = feedback_.snapshot();
+        text = feedback_.snapshot(now(), refreshing_event_);
     }
 
     if (text == published_feedback_ && path == feedback_path_) {
@@ -511,6 +502,10 @@ void Engine::replace_scores(size_t account, const std::vector<Score>& scores) {
     best_[account].clear();
     for (const auto& score : scores) {
         best_[account].insert_or_assign(score.chart_id, score);
+    }
+    if (config_.sync) {
+        pumbility_[account] = pool_total(catalog_, best_[account]);
+        feedback_.rating(static_cast<int>(account), pumbility_[account]);
     }
 }
 
@@ -555,6 +550,7 @@ void Engine::sync() {
             }
 
             std::lock_guard lock(gate_);
+            refreshing_event_.clear();
             account_status_[account] = "PIU Scores unavailable; will retry";
             account_feedback_[account] = code;
             for (const auto& item : data_.pending) {
@@ -575,7 +571,6 @@ void Engine::sync_account(size_t account) {
     std::string mix;
     unsigned generation;
     bool need_catalog;
-    bool show_rating;
     {
         std::lock_guard lock(gate_);
         if (tokens_[account].empty() || (!config_.sync && (!config_.overlay || account != 0))) {
@@ -586,12 +581,10 @@ void Engine::sync_account(size_t account) {
         mix = config_.mix;
         generation = generation_;
         need_catalog = catalog_.empty();
-        show_rating = config_.sync && !config_.accounts[account].profile.empty();
     }
 
     auto charts = need_catalog ? api_.catalog(token, mix) : std::vector<Chart>{};
     auto scores = api_.scores(token, mix);
-    auto total = show_rating ? read_pumbility(api_, token, mix) : std::nullopt;
     for (auto& chart : charts) {
         chart.title_key = normalized(chart.title);
     }
@@ -606,8 +599,6 @@ void Engine::sync_account(size_t account) {
         }
 
         replace_scores(account, scores);
-        pumbility_[account] = total;
-        feedback_.rating(static_cast<int>(account), total);
         account_status_[account] = "Connected";
         account_feedback_[account].clear();
         status_ = config_.sync ? "Connected. PB syncing is enabled." : "Connected. OBS overlay only.";
@@ -690,26 +681,24 @@ void Engine::sync_account(size_t account) {
             }
 
             complete(index, "accepted");
+            refreshing_event_ = event;
         }
 
         // A failed refresh cannot undo a confirmed POST or change its receipt to uncertain.
-        auto before = total;
-        total = read_pumbility(api_, token, mix);
-        {
-            std::lock_guard lock(gate_);
-            if (generation != generation_) {
-                return;
-            }
-            pumbility_[account] = total;
-            feedback_.rating(static_cast<int>(account), total);
-            feedback_.gain(event, before, total);
-        }
         auto refreshed = api_.scores(token, mix);
         std::lock_guard lock(gate_);
+        refreshing_event_.clear();
         if (generation != generation_) {
             return;
         }
 
+        auto updated = std::find_if(refreshed.begin(), refreshed.end(), [&](const Score& row) {
+            return row.chart_id == play.chart_id && row.score == play.score && row.broken == play.broken;
+        });
+        if (updated != refreshed.end()) {
+            // Isolate this play even if another chart changed during the same website refresh.
+            feedback_.gain(event, pumbility_[account], pool_total(catalog_, best_[account], &*updated));
+        }
         replace_scores(account, refreshed);
     }
 }

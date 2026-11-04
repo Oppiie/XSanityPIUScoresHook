@@ -17,10 +17,13 @@ void api_checks() {
     }
 
     PiuScoresApi stats([](const std::string& url, const std::string&, const std::optional<Object>& body) {
-        check(!body && url.ends_with("/players/me/stats?mix=Phoenix2"), "read the authenticated mix total");
-        return parse(R"({"pumbility":4012.25,"singlesPumbility":999})");
+        check(!body && url.find("/players/me/scores?mix=Phoenix2") != std::string::npos,
+            "read the authenticated mix scores");
+        return parse(
+            R"({"data":[{"chartId":"chart","score":992575,"pumbility":344.08}],"scoringModel":"phoenix","next":null})");
     });
-    check(stats.pumbility("test", "Phoenix2") == 401225, "overall rating preserves hundredths");
+    check(stats.scores("test", "Phoenix2").at(0).pumbility_cents == 34408,
+        "website chart value preserves hundredths");
 
     int calls = 0;
     PiuScoresApi pages([&](const std::string&, const std::string&, const std::optional<Object>&) {

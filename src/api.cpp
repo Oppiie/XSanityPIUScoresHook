@@ -216,20 +216,14 @@ std::vector<Score> PiuScoresApi::scores(const std::string& token, const std::str
             score.score = number(row, L"score");
         }
 
+        auto points = row.GetNamedNumber(L"pumbility", -1.0);
+        if (std::isfinite(points) && points >= 0 && points * 100 <= (std::numeric_limits<int>::max)()) {
+            score.pumbility_cents = static_cast<int>(std::llround(points * 100));
+        }
         scores.push_back(std::move(score));
     }
 
     return scores;
-}
-
-std::optional<int> PiuScoresApi::pumbility(const std::string& token, const std::string& mix) {
-    validate_mix(mix);
-    auto stats = request(std::string(Origin) + "/api/v2/players/me/stats?mix=" + mix, token);
-    auto points = stats.GetNamedNumber(L"pumbility", -1.0);
-    if (!std::isfinite(points) || points < 0 || points * 100 > (std::numeric_limits<int>::max)()) {
-        return std::nullopt;
-    }
-    return static_cast<int>(std::llround(points * 100));
 }
 
 void PiuScoresApi::upload(const std::string& token, const std::string& mix, const Play& play) {
