@@ -59,7 +59,7 @@ The companion returns outcomes through `Save/PiuCompanion/status.txt`. It replac
 
 ```text
 PIUCOMPANION 1
-<event-id><TAB><status-code>
+<event-id><TAB><status-code>[<TAB><total-hundredths><TAB><gain-hundredths-or-dash>]
 ```
 
 There are at most two entries, with no keys, profile names, or score payloads. Entries expire after two minutes. Setup clears this file with the other managed transient files when replacing or relocating the hook, removing components, or uninstalling.
@@ -72,6 +72,8 @@ The hook reads fixed status codes for the matching attempt; it never executes fi
 | Retry an unavailable reader at menus | Every two seconds |
 | Show unavailable status if no response arrives | After eight seconds |
 | Fade a final outcome beneath the usercard | After five seconds; repeated feedback does not restart the timer |
+
+A separate footer on each player's side shows the overall Pumbility for their linked account and mix. The status row can append the total and gain as two tab-separated fields in hundredths of a point. A dash in the gain field means the change is unknown. The hook keeps the readout on screen until evaluation ends. The companion compares the stats endpoint before and after an accepted upload. A covered or skipped play adds zero.
 
 Feedback failures cannot block capture or uploads, and notifications do not change retry policy.
 

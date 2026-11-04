@@ -372,7 +372,7 @@ local messages = {
     unavailable = { "Sync status unavailable - check companion", "#FFD078" },
     capture_error = { "Could not read this result", "#FFA295" },
 }
-local notices, cards = {}, {}
+local notices, cards, widgets = {}, {}, {}
 local feedback_elapsed, result_started = 0, 0
 
 local function read_feedback()
@@ -392,20 +392,53 @@ local function read_feedback()
     feedback_state = "ready"
 
     local found = {}
-    for id, code in text:gmatch("([%w_-]+)\t([a-z_]+)\n") do
-        if messages[code] then
-            found[id] = code
+    for line in text:gmatch("[^\n]+") do
+        local id, code, total, gain = line:match("^([%w_-]+)\t([a-z_]+)\t(%d+)\t([%d%-]+)$")
+        if not id then
+            id, code = line:match("^([%w_-]+)\t([a-z_]+)$")
+        end
+        if id and messages[code] then
+            found[id] = { code = code, total = tonumber(total), gain = tonumber(gain) }
         end
     end
     for _, notice in pairs(notices) do
         if notice.id and found[notice.id] then
-            local code = found[notice.id]
+            local result = found[notice.id]
+            notice.total, notice.gain = result.total, result.gain
+            local code = result.code
             if code ~= notice.code and not (code == "checking" and notice.code == "unavailable") then
                 notice.code = code
                 notice.changed_at = GetTimeSinceStart()
             end
             notice.received = true
         end
+    end
+end
+
+local function update_widget(side, notice)
+    local widget = widgets[side]
+    if not widget then
+        return
+    end
+    local text
+    if
+        notice
+        and notice.id
+        and notice.code ~= "ambiguous"
+        and notice.code ~= "unlinked"
+        and notice.code ~= "expired"
+    then
+        text = "P"
+            .. side
+            .. "  PUMBILITY\n"
+            .. (notice.total and string.format("%.2f", notice.total / 100) or "—")
+        if notice.gain then
+            text = text .. string.format("   +%.2f", notice.gain / 100)
+        end
+    end
+    if widget.text ~= text then
+        widget.actor:settext(text or ""):visible(text ~= nil)
+        widget.text = text
     end
 end
 
@@ -442,6 +475,7 @@ local function update_notifications(screen, delta)
             code = nil
         end
 
+        update_widget(side, notice)
         if screen ~= "ScreenEvaluation" then
             card.actor:visible(false)
         end
@@ -503,6 +537,32 @@ local function notification_actors()
                 end,
             },
         })
+    end
+    return frame
+end
+
+local function rating_actors()
+    local frame = Def.ActorFrame({})
+    if not capture_results then
+        return frame
+    end
+    -- Bottom centre, between the stock left and right information panels.
+    local spacing = math.min(82, SCREEN_WIDTH * 0.065)
+    local width = spacing * 1.8
+    for side = 1, 2 do
+        local player_side = side
+        frame[#frame + 1] = LoadFont("Common Normal")
+            .. {
+                Name = "PumbilityP" .. side,
+                InitCommand = function(self)
+                    self:xy(SCREEN_WIDTH / 2 + (player_side == 1 and -spacing or spacing), SCREEN_HEIGHT - 28)
+                        :zoom(0.6)
+                        :maxwidth(width / 0.6)
+                        :diffuse(color("#D8E9ED"))
+                        :visible(false)
+                    widgets[player_side] = { actor = self }
+                end,
+            }
     end
     return frame
 end
@@ -611,9 +671,11 @@ if not fallback_ok then
 end
 
 local notifications_ok, notifications = pcall(notification_actors)
+local ratings_ok, ratings = pcall(rating_actors)
 return Def.ActorFrame({
     fallback,
     notifications_ok and notifications or Def.ActorFrame({}),
+    ratings_ok and ratings or Def.ActorFrame({}),
     InitCommand = function(self)
         local ok, detail = pcall(function()
             session = tostring(math.floor(GetTimeSinceStart() * 1000))

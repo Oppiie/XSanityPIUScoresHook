@@ -33,6 +33,15 @@ SkippedPlay skipped_play(const Result& result) {
     return {"skipped_" + reason, "Not submitted: " + found->second + "."};
 }
 
+std::optional<int> read_pumbility(Api& api, const std::string& token, const std::string& mix) {
+    try {
+        return api.pumbility(token, mix);
+    } catch (...) {
+        // Stats are optional. A failed read must never prevent or retry a score upload.
+        return std::nullopt;
+    }
+}
+
 struct UploadFailure {
     std::string state;
     std::string message;
@@ -248,6 +257,8 @@ void Engine::configure(const std::array<AccountInput, 2>& accounts,
     }
 
     ++generation_;
+    pumbility_ = {};
+    feedback_ = {};
     catalog_.clear();
     playing_ = false;
     sync_due_ = true;
@@ -261,7 +272,9 @@ void Engine::capture(const Result& result, uint64_t written) {
         return;
     }
 
-    feedback_.observe(result, "checking", written);
+    int account = result.ambiguous || written <= config_.capture_after ? -1 : account_for(result.profile);
+    feedback_.observe(
+        result, "checking", written, account, account >= 0 ? pumbility_[account] : std::nullopt);
     auto receipt = data_.receipts.find(result.id);
     if (receipt != data_.receipts.end()) {
         feedback_.update(result.id, receipt->second);
@@ -277,9 +290,11 @@ void Engine::capture(const Result& result, uint64_t written) {
         return;
     }
 
-    int account = account_for(result.profile);
     if (result.ambiguous || account < 0 || written <= config_.capture_after) {
-        feedback_.update(result.id, result.ambiguous ? "ambiguous" : account < 0 ? "unlinked" : "expired");
+        feedback_.update(result.id,
+            result.ambiguous                   ? "ambiguous"
+            : written <= config_.capture_after ? "expired"
+                                               : "unlinked");
         return;
     }
 
@@ -560,6 +575,7 @@ void Engine::sync_account(size_t account) {
     std::string mix;
     unsigned generation;
     bool need_catalog;
+    bool show_rating;
     {
         std::lock_guard lock(gate_);
         if (tokens_[account].empty() || (!config_.sync && (!config_.overlay || account != 0))) {
@@ -570,10 +586,12 @@ void Engine::sync_account(size_t account) {
         mix = config_.mix;
         generation = generation_;
         need_catalog = catalog_.empty();
+        show_rating = config_.sync && !config_.accounts[account].profile.empty();
     }
 
     auto charts = need_catalog ? api_.catalog(token, mix) : std::vector<Chart>{};
     auto scores = api_.scores(token, mix);
+    auto total = show_rating ? read_pumbility(api_, token, mix) : std::nullopt;
     for (auto& chart : charts) {
         chart.title_key = normalized(chart.title);
     }
@@ -588,6 +606,8 @@ void Engine::sync_account(size_t account) {
         }
 
         replace_scores(account, scores);
+        pumbility_[account] = total;
+        feedback_.rating(static_cast<int>(account), total);
         account_status_[account] = "Connected";
         account_feedback_[account].clear();
         status_ = config_.sync ? "Connected. PB syncing is enabled." : "Connected. OBS overlay only.";
@@ -673,6 +693,17 @@ void Engine::sync_account(size_t account) {
         }
 
         // A failed refresh cannot undo a confirmed POST or change its receipt to uncertain.
+        auto before = total;
+        total = read_pumbility(api_, token, mix);
+        {
+            std::lock_guard lock(gate_);
+            if (generation != generation_) {
+                return;
+            }
+            pumbility_[account] = total;
+            feedback_.rating(static_cast<int>(account), total);
+            feedback_.gain(event, before, total);
+        }
         auto refreshed = api_.scores(token, mix);
         std::lock_guard lock(gate_);
         if (generation != generation_) {

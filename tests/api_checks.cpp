@@ -16,6 +16,12 @@ void api_checks() {
         check(!PiuScoresApi::allowed(url), "unsafe API destination rejected before token transport");
     }
 
+    PiuScoresApi stats([](const std::string& url, const std::string&, const std::optional<Object>& body) {
+        check(!body && url.ends_with("/players/me/stats?mix=Phoenix2"), "read the authenticated mix total");
+        return parse(R"({"pumbility":4012.25,"singlesPumbility":999})");
+    });
+    check(stats.pumbility("test", "Phoenix2") == 401225, "overall rating preserves hundredths");
+
     int calls = 0;
     PiuScoresApi pages([&](const std::string&, const std::string&, const std::optional<Object>&) {
         ++calls;

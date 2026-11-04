@@ -170,5 +170,11 @@ for command in io.lines() do
         output:write(card.values.visible[1] and text and text[1] or "hidden", "\n")
     end
     output:close()
+    local ratings = assert(io.open(arg[2] .. "/ratings.txt", "wb"))
+    for _, widget in ipairs(actor[3]) do
+        local text = widget.values.settext
+        ratings:write(widget.values.visible[1] and text and text[1] or "hidden", "\n")
+    end
+    ratings:close()
     collectgarbage("collect")
 end

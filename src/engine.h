@@ -23,6 +23,7 @@ class Engine {
     std::array<std::string, 2> tokens_;
     std::array<std::string, 2> account_status_;
     std::array<std::string, 2> live_profiles_;
+    std::array<std::optional<int>, 2> pumbility_;
     std::string status_ = "Enter your XSanity profile and PIU Scores API key in Settings.";
     std::vector<Chart> catalog_;
     std::array<std::map<std::string, Score>, 2> best_;

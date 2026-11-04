@@ -138,6 +138,11 @@ void live_checks() {
                 R"({"data":[{"id":"s14","songName":"Digitalis","type":"Single","level":14},{"id":"s16","songName":"Digitalis","type":"Single","level":16}],"next":null})");
         }
 
+        if (url.find("/stats?") != std::string::npos) {
+            return token == "bob-key"
+                       ? parse(uploads.empty() ? R"({"pumbility":501.25})" : R"({"pumbility":513.5})")
+                       : parse(R"({"pumbility":767})");
+        }
         if (!body) {
             if (token == "alice-key" && alice_offline) {
                 throw Error("Account temporarily unavailable");
@@ -188,7 +193,8 @@ void live_checks() {
               str(uploads[0].second, L"award") == "TG",
         "P2 posts its own chart, score and plate while P1 remains offline");
     wait_for([&] {
-        return read(folder / L"notifications.txt") == "Saved - will retry\nPB submitted\n";
+        return read(folder / L"notifications.txt") == "Saved - will retry\nPB submitted\n" &&
+               read(folder / L"ratings.txt").find("P2  PUMBILITY\n513.50   +12.25") != std::string::npos;
     });
     check(true, "native feedback returns through the real Lua hook into the two result cards");
     Engine restarted(state, api);

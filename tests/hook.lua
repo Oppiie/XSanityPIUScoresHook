@@ -242,6 +242,7 @@ local function fixture(options)
     )
     mount(actor)
     game.cards = actor[2]
+    game.widgets = actor[3]
     decode()
     if not options.clock_error then
         assert(type(game.update) == "function", "initialization registers the live update callback")
@@ -545,7 +546,7 @@ local function message(side)
     return feedback_game.cards[side]:GetChild("Message").values.settext[1]
 end
 check(message(1) == "Checking PIU Scores...", "notification waits for a real companion outcome")
-feedback_game.feedback = "PIUCOMPANION 1\n" .. ids[1] .. "\taccepted\n" .. ids[2] .. "\tauth\n"
+feedback_game.feedback = "PIUCOMPANION 1\n" .. ids[1] .. "\taccepted\t401225\t175\n" .. ids[2] .. "\tauth\n"
 feedback_game:tick("ScreenEvaluation", 0.5)
 check(
     message(1) == "PB submitted" and message(2) == "Check your API key in the companion",
@@ -560,10 +561,20 @@ check(
     feedback_game.cards[1].values.diffusealpha[1] == 0,
     "unchanged feedback fades out after five seconds and cannot restart the timer"
 )
+local rating = feedback_game.widgets:GetChild("PumbilityP1")
+check(
+    rating.values.visible[1] and rating.values.settext[1] == "P1  PUMBILITY\n4012.25   +1.75",
+    "rating belongs to this result and remains visible after its notification fades"
+)
+check(
+    feedback_game.widgets:GetChild("PumbilityP2").values.settext[1] == "P2  PUMBILITY\n—",
+    "P2 never inherits P1's rating"
+)
 feedback_game.feedback = "PIUCOMPANION 1\nold-event\tretry\n"
 feedback_game:tick("ScreenEvaluation", 0.5)
 check(message(1) == "PB submitted", "unrelated or delayed feedback cannot replace the current outcome")
 feedback_game:tick("ScreenSelectMusic")
+check(not rating.values.visible[1], "leaving evaluation clears the persistent rating")
 check(
     not feedback_game.cards[1].values.visible[1] and not feedback_game.cards[2].values.visible[1],
     "notifications are hidden outside the result screen"

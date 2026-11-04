@@ -7,6 +7,15 @@ struct FeedbackApi : Api {
     int error = 0;
     bool offline = false;
     int posts = 0;
+    int rating = 401050;
+    bool stats_offline = false;
+
+    std::optional<int> pumbility(const std::string&, const std::string&) override {
+        if (stats_offline) {
+            throw Error("stats unavailable");
+        }
+        return rating;
+    }
 
     std::vector<Chart> catalog(const std::string&, const std::string&) override {
         return {{"chart", "Test Song!", "Single", 10}};
@@ -24,6 +33,7 @@ struct FeedbackApi : Api {
         if (error) {
             throw HttpError(error);
         }
+        rating += 175;
     }
 };
 } // namespace
@@ -67,7 +77,7 @@ void feedback_checks() {
         "invalid credentials retain the score and request account settings");
     api.error = 0;
     engine.sync();
-    check(status().find("first\taccepted") != std::string::npos && engine.pending_count(0) == 0,
+    check(status().find("first\taccepted\t401225\t175") != std::string::npos && engine.pending_count(0) == 0,
         "only confirmed upload acceptance displays submitted");
     auto modified = fs::last_write_time(status_path);
     engine.poll();
@@ -113,7 +123,8 @@ void feedback_checks() {
     auto unknown_reason = result("unknown-reason");
     unknown_reason.skip_reason = "bad\nrecord";
     engine.capture(unknown_reason, now());
-    check(status().find("unknown-reason\tskipped\n") != std::string::npos && engine.pending_count(0) == 0,
+    check(status().find("unknown-reason\tskipped\t401225\t0\n") != std::string::npos &&
+              engine.pending_count(0) == 0,
         "unknown reasons stay ineligible and cannot inject feedback records");
     engine.capture(result("offline"), now());
     api.offline = true;
@@ -127,6 +138,7 @@ void feedback_checks() {
 
     fs::remove(status_path);
     fs::create_directory(status_path);
+    api.stats_offline = true;
     engine.capture(result("write-failure"), now());
     engine.poll();
     api.offline = false;

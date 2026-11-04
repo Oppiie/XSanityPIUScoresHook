@@ -2,6 +2,8 @@
 #include "version.h"
 #include <winhttp.h>
 #include <set>
+#include <cmath>
+#include <limits>
 
 namespace piu {
 namespace {
@@ -218,6 +220,16 @@ std::vector<Score> PiuScoresApi::scores(const std::string& token, const std::str
     }
 
     return scores;
+}
+
+std::optional<int> PiuScoresApi::pumbility(const std::string& token, const std::string& mix) {
+    validate_mix(mix);
+    auto stats = request(std::string(Origin) + "/api/v2/players/me/stats?mix=" + mix, token);
+    auto points = stats.GetNamedNumber(L"pumbility", -1.0);
+    if (!std::isfinite(points) || points < 0 || points * 100 > (std::numeric_limits<int>::max)()) {
+        return std::nullopt;
+    }
+    return static_cast<int>(std::llround(points * 100));
 }
 
 void PiuScoresApi::upload(const std::string& token, const std::string& mix, const Play& play) {

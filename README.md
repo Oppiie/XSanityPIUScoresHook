@@ -38,7 +38,9 @@ The default folder is `%LOCALAPPDATA%\XSanityPIUScoresHook\Screenshots`. Use **B
 
 Keep the results screen open for at least three seconds so its animation can settle. The companion captures a provisional image while results are visible and keeps it only after comparison with PIU Scores identifies a PB. Offline images wait alongside pending scores; non-PB images are discarded. Screenshot failures appear in Settings and do not stop syncing. Native window capture requires Windows 10 version 1903 or later and a visible game window.
 
-## Result notifications
+## Results screen
+
+Each linked player has a Pumbility readout at the bottom of the results screen. It shows their overall total for the selected mix and the change PIU Scores reports after syncing this play. The readout stays visible until you leave results. A dash means the total is unavailable.
 
 With syncing enabled, each player's results screen shows a small PIU Scores status card: submitted, website PB already up to date, saved for retry, or a specific reason it could not sync. Cards appear beneath each usercard, follow the current play, and fade out after five seconds. A new outcome can briefly show again; leaving the results screen hides them immediately.
 
