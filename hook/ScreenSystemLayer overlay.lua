@@ -374,6 +374,7 @@ local messages = {
 }
 local notices, cards, widgets = {}, {}, {}
 local feedback_elapsed, result_started = 0, 0
+local rating_frame, rating_fading
 
 local function read_feedback()
     -- Use the same reader as xsanity's bundled theme loader. RageFile:Open is song-only.
@@ -425,7 +426,7 @@ local function rating_value(notice)
         return "Fetching..."
     end
     if notice.total and notice.gain then
-        return string.format("%.2f   +%.2f", notice.total / 100, notice.gain / 100)
+        return string.format("%.2f   %+.2f", notice.total / 100, notice.gain / 100)
     end
     return "Unavailable"
 end
@@ -446,12 +447,39 @@ local function update_widget(side, notice)
         text = "P" .. side .. "  PUMBILITY\n" .. rating_value(notice)
     end
     if widget.text ~= text then
-        widget.actor:settext(text or ""):visible(text ~= nil)
+        widget.actor:settext(text or ""):visible(text ~= nil):ClearAttributes()
+        local plus = text and notice.gain and notice.gain > 0 and text:find("+", 1, true)
+        if plus then
+            widget.actor:AddAttribute(plus - 1, { Length = #text - plus + 1, Diffuse = color("#00FC1E") })
+        end
         widget.text = text
     end
 end
 
-local function update_notifications(screen, delta)
+local function update_rating_fade(screen, top)
+    if not rating_frame then
+        return
+    end
+    if screen ~= "ScreenEvaluation" then
+        if rating_fading then
+            rating_frame:stoptweening():diffusealpha(1)
+            rating_fading = false
+        end
+    elseif not rating_fading and top:IsTransitioning() then
+        -- The screen also transitions on entry. Only follow an active exit actor.
+        for _, name in ipairs({ "Out", "Cancel" }) do
+            local transition = top:GetChild(name)
+            local remaining = transition and transition:GetTweenTimeLeft()
+            if remaining and remaining > 0 then
+                rating_frame:linear(remaining):diffusealpha(0)
+                rating_fading = true
+                break
+            end
+        end
+    end
+end
+
+local function update_notifications(screen, delta, top)
     if not capture_results then
         return
     end
@@ -503,6 +531,7 @@ local function update_notifications(screen, delta)
             card.code = code
         end
     end
+    update_rating_fade(screen, top)
 end
 
 local function notification_actors()
@@ -554,6 +583,9 @@ local function rating_actors()
     local frame = Def.ActorFrame({})
     if not capture_results then
         return frame
+    end
+    frame.InitCommand = function(self)
+        rating_frame = self
     end
     -- Between the record panels, below Legacy Score and above the XSANITY footer logo.
     local spacing = math.min(82, SCREEN_WIDTH * 0.065)
@@ -663,7 +695,7 @@ local function tick(delta)
         heartbeat = 0
     end
     -- Display failures cannot invalidate a captured result or interrupt the game.
-    pcall(update_notifications, screen, delta)
+    pcall(update_notifications, screen, delta, top)
     lastScreen = screen
 end
 

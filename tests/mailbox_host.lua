@@ -26,6 +26,9 @@ SCREENMAN = {
             GetName = function()
                 return screen
             end,
+            IsTransitioning = function()
+                return false
+            end,
         }
     end,
     SystemMessage = function() end,

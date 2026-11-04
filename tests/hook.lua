@@ -108,6 +108,16 @@ local function fixture(options)
                     GetName = function()
                         return game.screen
                     end,
+                    IsTransitioning = function()
+                        return game.transition ~= nil
+                    end,
+                    GetChild = function(_, name)
+                        return {
+                            GetTweenTimeLeft = function()
+                                return game.transition == name and game.transition_left or 0
+                            end,
+                        }
+                    end,
                 }
             end,
         },
@@ -584,7 +594,39 @@ check(
 feedback_game.feedback = "PIUCOMPANION 1\nold-event\tretry\n"
 feedback_game:tick("ScreenEvaluation", 0.5)
 check(message(1) == "PB submitted", "unrelated or delayed feedback cannot replace the current outcome")
+local green = rating.values.AddAttribute
+check(
+    green
+        and rating.values.settext[1]:sub(green[1] + 1, green[1] + green[2].Length) == "+1.75"
+        and green[2].Diffuse == "#00FC1E",
+    "only the positive gain uses the game's PB green"
+)
+feedback_game.transition, feedback_game.transition_left = "In", 0.2
+feedback_game:tick("ScreenEvaluation")
+check(not feedback_game.widgets.values.linear, "entering results does not start an exit fade")
+feedback_game.transition, feedback_game.transition_left = "Out", 0.38
+feedback_game:tick("ScreenEvaluation")
+check(
+    feedback_game.widgets.values.linear[1] == 0.38 and feedback_game.widgets.values.diffusealpha[1] == 0,
+    "both readings fade with the outgoing screen's remaining tween"
+)
+feedback_game.transition_left = 0.15
+feedback_game.feedback = "PIUCOMPANION 1\n"
+    .. ids[1]
+    .. "\tcovered\t401225\t0\n"
+    .. ids[2]
+    .. "\taccepted\t10000\t1\n"
+feedback_game:tick("ScreenEvaluation", 0.5)
+check(
+    rating.values.settext[1]:match("%+0%.00$")
+        and not rating.values.AddAttribute
+        and feedback_game.widgets:GetChild("PumbilityP2").values.AddAttribute[2].Diffuse == "#00FC1E",
+    "zero clears the previous color while a one-cent P2 gain is green"
+)
+check(feedback_game.widgets.values.linear[1] == 0.38, "late feedback does not restart the exit fade")
+feedback_game.transition = nil
 feedback_game:tick("ScreenSelectMusic")
+check(feedback_game.widgets.values.diffusealpha[1] == 1, "the next results screen starts at full opacity")
 check(not rating.values.visible[1], "leaving evaluation clears the persistent rating")
 check(
     not feedback_game.cards[1].values.visible[1] and not feedback_game.cards[2].values.visible[1],

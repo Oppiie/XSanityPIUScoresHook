@@ -46,6 +46,8 @@ return function(env, read)
         "halign",
         "visible",
         "settext",
+        "AddAttribute",
+        "linear",
     }) do
         methods[name] = function(self, ...)
             self.values[name] = { ... }
@@ -55,7 +57,8 @@ return function(env, read)
     methods.stoptweening = function(self)
         return self
     end
-    methods.linear = function(self)
+    methods.ClearAttributes = function(self)
+        self.values.AddAttribute = nil
         return self
     end
     methods.GetChild = function(self, name)
