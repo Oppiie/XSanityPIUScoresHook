@@ -8,13 +8,10 @@ $luaRoot = Join-Path $toolRoot 'lua-5.1.5'
 $lua = Join-Path $luaRoot 'lua.exe'
 if (-not (Test-Path -LiteralPath $lua)) {
     New-Item -ItemType Directory -Path $toolRoot -Force | Out-Null
-    $archive = Join-Path $toolRoot 'lua-5.1.5.tar.gz'
+    $archive = Join-Path $repoRoot 'tests/vendor/lua-5.1.5.tar.gz'
     $sha256 = '2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333'
-    if (-not (Test-Path -LiteralPath $archive)) {
-        Invoke-WebRequest -Uri 'https://www.lua.org/ftp/lua-5.1.5.tar.gz' -OutFile $archive
-    }
     if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $sha256) {
-        throw 'Lua test runtime download failed checksum verification.'
+        throw 'Bundled Lua test source failed checksum verification.'
     }
     & tar.exe -xzf $archive -C $toolRoot
     if ($LASTEXITCODE -ne 0) { throw 'Could not extract the Lua test runtime.' }
