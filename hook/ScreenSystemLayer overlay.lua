@@ -546,7 +546,7 @@ local function rating_actors()
     if not capture_results then
         return frame
     end
-    -- Bottom centre, between the stock left and right information panels.
+    -- Between the record panels, below Legacy Score and above the XSANITY footer logo.
     local spacing = math.min(82, SCREEN_WIDTH * 0.065)
     local width = spacing * 1.8
     for side = 1, 2 do
@@ -555,7 +555,7 @@ local function rating_actors()
             .. {
                 Name = "PumbilityP" .. side,
                 InitCommand = function(self)
-                    self:xy(SCREEN_WIDTH / 2 + (player_side == 1 and -spacing or spacing), SCREEN_HEIGHT - 28)
+                    self:xy(SCREEN_WIDTH / 2 + (player_side == 1 and -spacing or spacing), SCREEN_HEIGHT - 45)
                         :zoom(0.6)
                         :maxwidth(width / 0.6)
                         :diffuse(color("#D8E9ED"))
